@@ -1,5 +1,4 @@
 // api/newsletter.js
-import fetch from "node-fetch";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -14,17 +13,20 @@ export default async function handler(req, res) {
 
   // 1️⃣ Google reCAPTCHA v2 Invisible doğrulaması
   const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
+
   const recaptchaResponse = await fetch(
-    `https://www.google.com/recaptcha/api/siteverify`,
+    "https://www.google.com/recaptcha/api/siteverify",
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: `secret=${recaptchaSecret}&response=${token}`,
     }
   );
+
   const recaptchaData = await recaptchaResponse.json();
 
-  if (!recaptchaData.success || recaptchaData.score < 0.5) {
+  // v2 Invisible → sadece success kontrol edilir
+  if (!recaptchaData.success) {
     return res.status(403).json({ message: "reCAPTCHA verification failed" });
   }
 
@@ -33,20 +35,23 @@ export default async function handler(req, res) {
   const adminToken = process.env.SHOPIFY_ADMIN_TOKEN;
 
   try {
-    const shopifyRes = await fetch(`https://${shopDomain}/admin/api/2025-10/customers.json`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": adminToken,
-      },
-      body: JSON.stringify({
-        customer: {
-          email: email,
-          tags: "prospect,newsletter",
-          verified_email: true,
+    const shopifyRes = await fetch(
+      `https://${shopDomain}/admin/api/2024-10/customers.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": adminToken,
         },
-      }),
-    });
+        body: JSON.stringify({
+          customer: {
+            email: email,
+            tags: "prospect, newsletter",
+            verified_email: true,
+          },
+        }),
+      }
+    );
 
     const shopifyData = await shopifyRes.json();
 
@@ -54,9 +59,11 @@ export default async function handler(req, res) {
       return res.status(shopifyRes.status).json({ message: shopifyData });
     }
 
-    return res.status(200).json({ message: "Customer created successfully" });
+    return res
+      .status(200)
+      .json({ message: "Customer created successfully" });
   } catch (err) {
-    console.error(err);
+    console.error("Server error:", err);
     return res.status(500).json({ message: "Server error" });
   }
 }
