@@ -5,7 +5,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Preflight request için
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -22,6 +21,10 @@ export default async function handler(req, res) {
 
   // 1️⃣ Google reCAPTCHA doğrulaması
   const recaptchaSecret = process.env.RECAPTCHA_SECRET_KEY;
+  
+  // DEBUG: Secret key'in ilk 10 karakterini logla
+  console.log('Secret key starts with:', recaptchaSecret ? recaptchaSecret.substring(0, 10) : 'MISSING');
+  
   const recaptchaResponse = await fetch(
     'https://www.google.com/recaptcha/api/siteverify',
     {
@@ -31,9 +34,16 @@ export default async function handler(req, res) {
     }
   );
   const recaptchaData = await recaptchaResponse.json();
+  
+  // DEBUG: Google'ın tam yanıtını logla
+  console.log('reCAPTCHA response:', JSON.stringify(recaptchaData));
 
   if (!recaptchaData.success) {
-    return res.status(403).json({ success: false, message: 'reCAPTCHA verification failed' });
+    return res.status(403).json({ 
+      success: false, 
+      message: 'reCAPTCHA verification failed',
+      debug: recaptchaData  // Detaylı hata bilgisi
+    });
   }
 
   // 2️⃣ Shopify Customer oluşturma
@@ -62,7 +72,6 @@ export default async function handler(req, res) {
     const shopifyData = await shopifyRes.json();
 
     if (!shopifyRes.ok) {
-      // Email zaten kayıtlı olabilir
       if (shopifyData.errors && shopifyData.errors.email) {
         return res.status(200).json({ success: true, message: 'You are already subscribed!' });
       }
@@ -75,3 +84,14 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 }
+```
+
+**Save et ve deploy olmasını bekle.**
+
+---
+
+**ADIM 2: Tekrar test et**
+
+Siteyi test et, bu sefer console'da daha detaylı hata göreceksin:
+```
+API Response: {success: false, message: 'reCAPTCHA verification failed', debug: {...}}
