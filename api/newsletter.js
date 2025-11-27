@@ -59,9 +59,7 @@ export default async function handler(req, res) {
       return res.status(shopifyRes.status).json({ message: shopifyData });
     }
 
-    return res
-      .status(200)
-      .json({ message: "Customer created successfully" });
+    return res.status(200).json({ success: true, message: "Customer created successfully" });
   } catch (err) {
     console.error("Server error:", err);
     return res.status(500).json({ message: "Server error" });
