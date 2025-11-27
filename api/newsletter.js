@@ -84,14 +84,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 }
-```
-
-**Save et ve deploy olmasını bekle.**
-
----
-
-**ADIM 2: Tekrar test et**
-
-Siteyi test et, bu sefer console'da daha detaylı hata göreceksin:
-```
-API Response: {success: false, message: 'reCAPTCHA verification failed', debug: {...}}
